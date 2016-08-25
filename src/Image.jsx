@@ -6,16 +6,13 @@ import blur from './utils/blur';
 
 class Image extends Component {
 
-
-   componentWillMount() {
+    componentWillMount() {
        this.initComponent();
     }
 
     componentDidMount() {
         this.allListeners();
     }
-
-    // update
 
     componentWillReceiveProps(nextProps) {
         if (nextProps.src !== this.props.src || nextProps.srcSet !== this.props.srcSet) {
@@ -40,7 +37,6 @@ class Image extends Component {
         return false;
     }
 
-
     componentWillUpdate(nextProps, nextState) {
 
     }
@@ -53,8 +49,6 @@ class Image extends Component {
             }
         }
     }
-
-    // remove
 
     componentWillUnmount() {
         this.removeListeners();
@@ -108,7 +102,6 @@ class Image extends Component {
             }, this.props.debounce);
         }
     }
-
 
     getWindowHeight() {
         return window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
@@ -220,6 +213,7 @@ class Image extends Component {
             return null;
         }
 
+        const style = objectAssign({}, styles.full, {zIndex: 1});
 
         if (typeof placeholder === 'string') {
 
@@ -238,11 +232,12 @@ class Image extends Component {
 
             attributes.src = placeholder;
 
-            const style = objectAssign({}, styles.full, {zIndex: 1});
-
             if (this.props.blur > 0) {
+                attributes.style = {
+                    display: 'none'
+                };
                 return [
-                    <img key={1} style={{display: 'none'}} {...attributes} />,
+                    <img key={1} {...attributes} />,
                     <canvas key={2} style={style} />
                 ];
             }
@@ -252,7 +247,7 @@ class Image extends Component {
             }
         }
         else {
-            return placeholder;
+            return (<span style={style}>placeholder</span>);
         }
     }
 
@@ -353,8 +348,8 @@ Image.propTypes = {
     alt: PropTypes.string,
     crossOrigin: PropTypes.string,
     placeholder: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
-    'blur': React.PropTypes.bool,
-    className: PropTypes.number,
+    'blur': React.PropTypes.number,
+    className: PropTypes.string,
     id: PropTypes.string,
     debounce: PropTypes.number,
     animationSpeed: PropTypes.number,

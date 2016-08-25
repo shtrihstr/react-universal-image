@@ -1,9 +1,40 @@
 # React Universal Image
 
+![react-universal-image](https://cloud.githubusercontent.com/assets/11991783/17969114/bcd02ec6-6ad0-11e6-8dd4-34aa410863c2.gif)
+
+## Features
+* Lazy load
+* Placeholder
+* Progressive image loading (as on Medium.com) 
+* Image error fallback
+
+
 ## Installation
 
 ## Usage
+```jsx
+import React from 'react';
+import ReactDOM from 'react-dom';
+import Image from 'react-universal-image';
 
+const App = () => {
+    
+    return (
+        <div>
+            <image
+                src="img-400x200.jpg"
+                srcSet="img-400x200.jpg 400w, img-800x400.jpg 800w"
+                placeholder="img-20x10.jpg"
+                ratio={2}
+                fallback="image-not-found.jpg"
+                className="post-image"
+            />
+        </div>
+    );
+};
+
+ReactDOM.render(<App />, document.body);
+```
 
 ## Props
 
@@ -33,7 +64,7 @@ Specify a placeholder image URL or Component for lazy loaded image.
 ```jsx
 <Image src="img-800x400.jpg" placeholder="img-20x10.jpg" />
 <Image src="img-800x400.jpg" placeholder="="data:image/jpeg;base64,/..." />
-<Image src="img-800x400.jpg" placeholder={<span style={{position: 'absolute}}>loading...</span>} />
+<Image src="img-800x400.jpg" placeholder={<span>loading...</span>} />
 ```
 
 ### blur
