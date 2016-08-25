@@ -258,8 +258,13 @@ class Image extends Component {
 
         if (this.state.status === 'error') {
             if (typeof this.props.fallback === 'string') {
-                let style = objectAssign({}, styles.full, {zIndex: 2});
-                return (<img src={this.props.fallback} style={style} />)
+                let backgroundStyle = {
+                    backgroundImage: 'url(' + this.props.fallback + ')',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'center center'
+                };
+                let style = objectAssign({}, styles.full, {zIndex: 2}, backgroundStyle);
+                return (<span className="img-fallback" style={style}></span>)
             }
             else {
                 return null;
