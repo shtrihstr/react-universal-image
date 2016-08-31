@@ -1,10 +1,11 @@
 import React, { Component, PropTypes } from 'react';
+import shallowCompare from 'react-addons-shallow-compare';
 import ReactDom from 'react-dom';
 import objectAssign from 'object-assign';
 
 import blur from './utils/blur';
 
-class Image extends Component {
+class UniversalImage extends Component {
 
     componentWillMount() {
        this.initComponent();
@@ -21,20 +22,7 @@ class Image extends Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-
-        for (let key in nextState) {
-            if (nextState.hasOwnProperty(key) && nextState[key] !== this.state[key]) {
-                return true;
-            }
-        }
-
-        for (let key in nextProps) {
-            if (nextProps.hasOwnProperty(key) && nextProps[key] !== this.props[key]) {
-                return true;
-            }
-        }
-
-        return false;
+        return shallowCompare(this, nextProps, nextState);
     }
 
     componentWillUpdate(nextProps, nextState) {
@@ -66,21 +54,26 @@ class Image extends Component {
         }
 
         this.setState({
-            status: 'waiting', // done, loading, animation,
+            status: porps.lazy ? 'waiting': 'loading', // done, loading, animation,
             ratio: ratio,
-            ratioAuto: false // if ratio was calculated automatically
+            ratioAuto: false, // if ratio was calculated automatically
+            ignoreTransition: false
         });
 
         if (this._doneTimer) {
             clearTimeout(this._doneTimer);
         }
+
+        this._createdAt = (new Date()).getTime();
     }
 
     allListeners() {
-        this._scrollListener = this.scrollListener.bind(this);
-        window.addEventListener('scroll', this._scrollListener, false);
-        window.addEventListener('wheel', this._scrollListener, false);
-        this._scrollListener();
+        if (this.props.lazy) {
+            this._scrollListener = this.scrollListener.bind(this);
+            window.addEventListener('scroll', this._scrollListener, false);
+            window.addEventListener('wheel', this._scrollListener, false);
+            this._scrollListener();
+        }
     }
 
     removeListeners() {
@@ -152,51 +145,85 @@ class Image extends Component {
     }
 
     onPlaceHolderLoad() {
+        const thumbnail = this.getNode().getElementsByTagName('img')[0];
+
+        if (!(thumbnail.naturalHeight > 0)) {
+            return;
+        }
+
+        if (this.props.blur > 0) {
+            const canvas = this.getNode().getElementsByTagName('canvas')[0];
+            if (canvas && thumbnail) {
+                canvas.width = 60;
+                canvas.height = Math.max(10, Math.round(60 / (thumbnail.naturalWidth / thumbnail.naturalHeight)));
+
+                if (typeof window !== 'undefined') {
+                    const cacheKey = this.props.placeholder.length > 60 ? this.props.src : this.props.placeholder;
+
+                    if (typeof window.universalImageCache === 'undefined') {
+                        window.universalImageCache = {};
+                    }
+
+                    if (typeof window.universalImageCache[cacheKey] === 'undefined') {
+                        canvas.getContext('2d').drawImage(thumbnail, 0, 0, canvas.width, canvas.height);
+                        blur(canvas, this.props.blur);
+                        window.universalImageCache[cacheKey] = canvas.toDataURL('image/jpeg');
+                    }
+                    else {
+                        // get blured image from cache
+                        this._blureCache = new Image();
+                        this._blureCache.onload = () => {
+                            if (this._blureCache) {
+                                canvas.getContext('2d').drawImage(this._blureCache, 0, 0, canvas.width, canvas.height);
+                            }
+                        };
+                        this._blureCache.src = window.universalImageCache[cacheKey];
+                    }
+
+                }
+                else {
+                    canvas.getContext('2d').drawImage(thumbnail, 0, 0, canvas.width, canvas.height);
+                    blur(canvas, this.props.blur);
+                }
+            }
+        }
 
         if (this.state.ratio == 0) {
-            let thumbnail = this.getNode().getElementsByTagName('img')[0];
             // get ratio from placeholder
             this.setState({
                 ratio: thumbnail.naturalWidth / thumbnail.naturalHeight,
                 ratioAuto: true
             });
         }
-
-        if (this.props.blur > 0) {
-            const canvas = this.getNode().getElementsByTagName('canvas')[0];
-            let thumbnail = this.getNode().getElementsByTagName('img')[0];
-            if (canvas && thumbnail) {
-                canvas.width = 60;
-                canvas.height = 30;
-                canvas.getContext('2d').drawImage(thumbnail, 0, 0, canvas.width, canvas.height);
-                blur(canvas, this.props.blur);
-            }
-        }
     }
 
     onImageLoad() {
 
-        let newState = {
-            status: 'animation'
-        };
+        let newState = {};
 
         if (this.state.ratio == 0 || this.state.ratioAuto) {
             let images = this.getNode().getElementsByTagName('img');
             let image = images[images.length - 1];
             // get ratio from image
-            this.setState({
-                ratio: image.naturalWidth / image.naturalHeight,
-                ratioAuto: true
-            });
+            newState.ratio = image.naturalWidth / image.naturalHeight;
+            newState.ratioAuto = true;
+        }
+
+        if (this.props.animationSpeed === 0 || (this.props.skipAnimation > 0 && (new Date()).getTime() < (this._createdAt + this.props.skipAnimation))) {
+            newState.status = 'done';
+            newState.ignoreTransition = true;
+        }
+        else {
+            newState.status = 'animation';
+
+            this._doneTimer = setTimeout(() => {
+                this.setState({
+                    status: 'done'
+                });
+            }, this.props.animationSpeed + 100); // + 100ms in case of lags
         }
 
         this.setState(newState);
-
-        this._doneTimer = setTimeout(() => {
-            this.setState({
-                status: 'done'
-            });
-        }, this.props.animationSpeed + 100); // + 100ms in case lags
     }
 
     onImageError() {
@@ -213,7 +240,7 @@ class Image extends Component {
             return null;
         }
 
-        const style = objectAssign({}, styles.full, {zIndex: 1});
+        const style = objectAssign({}, styles.full, styles.otimize, {zIndex: 1});
 
         if (typeof placeholder === 'string') {
 
@@ -233,9 +260,7 @@ class Image extends Component {
             attributes.src = placeholder;
 
             if (this.props.blur > 0) {
-                attributes.style = {
-                    display: 'none'
-                };
+                attributes.style = {display: 'none'};
                 return [
                     <img key={1} {...attributes} />,
                     <canvas key={2} style={style} />
@@ -271,11 +296,9 @@ class Image extends Component {
             }
         }
 
-        const transition = {
-            transition: 'visibility 0s linear 0s, opacity ' + (this.props.animationSpeed / 1000) + 's 0s'
-        };
+        const transition = this.state.ignoreTransition ? {} : {transition: 'visibility 0s linear 0s, opacity ' + (this.props.animationSpeed / 1000) + 's 0s'};
 
-        let style = objectAssign({}, styles.full, transition, {zIndex: 2});
+        let style = objectAssign({}, styles.full, styles.otimize, transition, {zIndex: 2});
         if (this.state.status === 'done' || this.state.status === 'animation') {
             style = objectAssign(style, styles.visible);
         }
@@ -344,7 +367,7 @@ class Image extends Component {
     }
 }
 
-Image.propTypes = {
+UniversalImage.propTypes = {
     src: PropTypes.string.isRequired,
     srcSet: PropTypes.string,
     sizes: PropTypes.string,
@@ -359,15 +382,19 @@ Image.propTypes = {
     debounce: PropTypes.number,
     animationSpeed: PropTypes.number,
     inline: React.PropTypes.bool,
-    fallback: PropTypes.string
+    fallback: PropTypes.string,
+    lazy: PropTypes.bool,
+    skipAnimation: PropTypes.number
 };
 
-Image.defaultProps = {
+UniversalImage.defaultProps = {
     alt: '',
     debounce: 200,
     animationSpeed: 400,
     inline: false,
-    'blur': 3
+    'blur': 3,
+    lazy: true,
+    skipAnimation: 0
 };
 
 const styles = {
@@ -397,8 +424,12 @@ const styles = {
     inline: {
         display: 'inline-block',
         width: '100%'
+    },
+    otimize: {
+        backfaceVisibility: 'hidden',
+        transform: 'translate3d(0, 0, 0)'
     }
 };
 
 
-export default Image;
+export default UniversalImage;

@@ -63,7 +63,7 @@ Specify a placeholder image URL or Component for lazy loaded image.
 
 ```jsx
 <Image src="img-800x400.jpg" placeholder="img-20x10.jpg" />
-<Image src="img-800x400.jpg" placeholder="="data:image/jpeg;base64,/..." />
+<Image src="img-800x400.jpg" placeholder="data:image/jpeg;base64,/..." />
 <Image src="img-800x400.jpg" placeholder={<span>loading...</span>} />
 ```
 

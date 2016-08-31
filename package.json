@@ -1,7 +1,7 @@
 {
     "name": "react-universal-image",
-    "description": "",
-    "version": "0.0.1",
+    "description": "React Universal Image",
+    "version": "0.1.9",
     "main": "lib/Image.js",
     "repository": {
         "type": "git",
@@ -16,6 +16,7 @@
     },
     "peerDependencies": {
         "react": "^15.0.0",
-        "react-dom": "^15.0.0"
+        "react-dom": "^15.0.0",
+        "object-assign": "^4.1.0"
     }
 }
