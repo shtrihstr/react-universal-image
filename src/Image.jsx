@@ -40,6 +40,13 @@ class UniversalImage extends Component {
 
     componentWillUnmount() {
         this.removeListeners();
+        if (this._timers) {
+            for (let key in this._timers) {
+                if (this._timers.hasOwnProperty(key)) {
+                    clearTimeout(this._timers[key]);
+                }
+            }
+        }
     }
 
     initComponent(porps) {
@@ -54,16 +61,22 @@ class UniversalImage extends Component {
         }
 
         this.setState({
-            status: porps.lazy ? 'waiting': 'loading', // done, loading, animation,
+            status: porps.lazy ? 'waiting': 'loading', // waiting, loading, animation, done
             ratio: ratio,
             ratioAuto: false, // if ratio was calculated automatically
             ignoreTransition: false
         });
 
-        if (this._doneTimer) {
-            clearTimeout(this._doneTimer);
+        if (this._timers) {
+            for (let key in this._timers) {
+                if (this._timers.hasOwnProperty(key)) {
+                    clearTimeout(this._timers[key]);
+                }
+            }
         }
+        this._timers = {};
 
+        this.scrollWait = false;
         this._createdAt = (new Date()).getTime();
     }
 
@@ -72,7 +85,7 @@ class UniversalImage extends Component {
             this._scrollListener = this.scrollListener.bind(this);
             window.addEventListener('scroll', this._scrollListener, false);
             window.addEventListener('wheel', this._scrollListener, false);
-            this._scrollListener();
+            this.checkVisibility();
         }
     }
 
@@ -90,7 +103,7 @@ class UniversalImage extends Component {
 
             this.checkVisibility();
 
-            setTimeout(() => {
+            this._timers.scroll = setTimeout(() => {
                 this.scrollWait = false;
             }, this.props.debounce);
         }
@@ -216,7 +229,7 @@ class UniversalImage extends Component {
         else {
             newState.status = 'animation';
 
-            this._doneTimer = setTimeout(() => {
+            this._timers.done = setTimeout(() => {
                 this.setState({
                     status: 'done'
                 });
@@ -272,7 +285,7 @@ class UniversalImage extends Component {
             }
         }
         else {
-            return (<span style={style}>placeholder</span>);
+            return (<span style={style}>{placeholder}</span>);
         }
     }
 
@@ -315,7 +328,9 @@ class UniversalImage extends Component {
         });
 
         attributes.onLoad = () => {
-            this.onImageLoad();
+            this._timers.onImageLoadTimeout = setTimeout(() => {
+                this.onImageLoad();
+            }, 100);
         };
 
         attributes.onError = (h) => {
@@ -401,17 +416,21 @@ const styles = {
     block: {
         display: 'block',
         padding: 0,
-        position: 'relative'
+        position: 'relative',
+        zIndex: 0
     },
     full: {
         position: 'absolute',
         display: 'block',
         left: 0,
         top: 0,
-        width: '100%',
-        height: '100%',
+        bottom: 0,
+        right: 0,
         margin: 0,
-        padding: 0
+        padding: 0,
+        width: '100%',
+        maxWidth: '100%',
+        height: '100%'
     },
     hidden: {
         visibility: 'hidden',
