@@ -253,7 +253,7 @@ class UniversalImage extends Component {
             return null;
         }
 
-        const style = objectAssign({}, styles.full, styles.otimize, {zIndex: 1});
+        const style = objectAssign({}, styles.full, {zIndex: 1});
 
         if (typeof placeholder === 'string') {
 
@@ -311,7 +311,8 @@ class UniversalImage extends Component {
 
         const transition = this.state.ignoreTransition ? {} : {transition: 'visibility 0s linear 0s, opacity ' + (this.props.animationSpeed / 1000) + 's 0s'};
 
-        let style = objectAssign({}, styles.full, styles.otimize, transition, {zIndex: 2});
+        let style = objectAssign({}, styles.full, transition, {zIndex: 2});
+
         if (this.state.status === 'done' || this.state.status === 'animation') {
             style = objectAssign(style, styles.visible);
         }
@@ -443,10 +444,6 @@ const styles = {
     inline: {
         display: 'inline-block',
         width: '100%'
-    },
-    otimize: {
-        backfaceVisibility: 'hidden',
-        transform: 'translate3d(0, 0, 0)'
     }
 };
 

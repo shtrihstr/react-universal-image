@@ -1,7 +1,7 @@
 {
     "name": "react-universal-image",
     "description": "React Universal Image",
-    "version": "0.1.16",
+    "version": "0.2.2",
     "main": "lib/Image.js",
     "scripts": {
         "build": "babel src/ --out-dir lib/"
